@@ -2,6 +2,7 @@ import path from 'path';
 import { fs } from '@modern-js/utils';
 import type { CliPlugin, AppTools } from '@modern-js/app-tools';
 import type { DataLoaderOptions, InternalModernPluginOptions } from '../types';
+import type { init } from '@module-federation/enhanced/runtime';
 import { transformName2Prefix } from '../runtime/utils';
 import { PLUGIN_IDENTIFIER } from '../constant';
 import {
@@ -10,7 +11,8 @@ import {
   MF_ROUTES_META,
 } from '../runtime/constant';
 import { generateRoutes, generateSlimRoutes } from './ast';
-import { MODERN_JS_FILE_SYSTEM_ROUTES_FILE_NAME } from './constant';
+import { MODERN_JS_FILE_SYSTEM_ROUTES_FILE_NAME, META_NAME } from './constant';
+import type { moduleFederationPlugin } from '@module-federation/sdk';
 
 function generateExtraExposeFiles(
   options: Parameters<Required<DataLoaderOptions>['patchMFConfig']>[0],
@@ -93,8 +95,8 @@ function addExpose(
 function addShared(
   options: Parameters<Required<DataLoaderOptions>['patchMFConfig']>[0],
 ) {
-  const { pkgName, mfConfig } = options;
-  const alias = `@${pkgName}/runtime/router`;
+  const { metaName, mfConfig } = options;
+  const alias = `@${metaName}/runtime/router`;
   if (!mfConfig.shared) {
     mfConfig.shared = {
       [alias]: { singleton: true },
@@ -170,6 +172,22 @@ function _pathMfConfig(
 //   return [...remoteProviderRouteIds];
 // }
 
+function transformRuntimeOptions(
+  buildOptions: moduleFederationPlugin.ModuleFederationPluginOptions,
+): Parameters<typeof init>[0] {
+  const remotes = buildOptions.remotes || {};
+  const runtimeRemotes = Object.entries(remotes).map((remote) => {
+    const [_alias, nameAndEntry] = remote;
+    const [name, entry] = (nameAndEntry as string).split('@');
+    return { name, entry };
+  });
+
+  return {
+    name: buildOptions.name!,
+    remotes: runtimeRemotes,
+  };
+}
+
 export const moduleFederationDataLoaderPlugin = (
   enable: boolean,
   internalOptions: InternalModernPluginOptions,
@@ -187,8 +205,9 @@ export const moduleFederationDataLoaderPlugin = (
       partialSSRRemotes = [],
       fetchSSRByRouteIds,
       patchMFConfig,
-      pkgName = 'modern-js',
+      metaName = META_NAME,
       serverPlugin = '@module-federation/modern-js/data-loader-server',
+      runtimeOptions,
     } = userConfig;
 
     if (!baseName) {
@@ -203,7 +222,7 @@ export const moduleFederationDataLoaderPlugin = (
     const name = internalOptions.csrConfig?.name!;
     //TODO: 区分多入口、区分 server/client routes
     const routesFilePath = path.resolve(
-      appContext.internalDirectory,
+      appContext.internalDirectory.replace(META_NAME, metaName || META_NAME),
       `./main/${MODERN_JS_FILE_SYSTEM_ROUTES_FILE_NAME}`,
     );
 
@@ -219,7 +238,9 @@ export const moduleFederationDataLoaderPlugin = (
       _internalServerPlugins({ plugins }) {
         plugins.push({
           name: serverPlugin,
-          options: internalOptions,
+          options:
+            runtimeOptions ||
+            transformRuntimeOptions(internalOptions.csrConfig!),
         });
 
         return { plugins };
@@ -246,7 +267,7 @@ export const moduleFederationDataLoaderPlugin = (
                   ? internalOptions.ssrConfig!
                   : internalOptions.csrConfig!,
                 baseName,
-                pkgName,
+                metaName,
                 isServer,
                 routesFilePath,
               });

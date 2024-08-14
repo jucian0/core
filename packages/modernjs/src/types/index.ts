@@ -1,6 +1,7 @@
 import { moduleFederationPlugin } from '@module-federation/sdk';
 import type { ModuleFederationPlugin as WebpackModuleFederationPlugin } from '@module-federation/enhanced';
 import type { ModuleFederationPlugin as RspackModuleFederationPlugin } from '@module-federation/enhanced/rspack';
+import type { init } from '@module-federation/enhanced/runtime';
 
 export interface PluginOptions {
   config?: moduleFederationPlugin.ModuleFederationPluginOptions;
@@ -27,8 +28,9 @@ export type BundlerPlugin =
 export type DataLoaderOptions = {
   baseName: string;
   partialSSRRemotes?: string[];
-  pkgName?: string;
+  metaName?: string;
   serverPlugin?: string;
+  runtimeOptions?: Parameters<typeof init>[0];
   fetchSSRByRouteIds?: (
     partialSSRRemotes: string[],
     mfConfig: moduleFederationPlugin.ModuleFederationPluginOptions,
@@ -36,7 +38,7 @@ export type DataLoaderOptions = {
   patchMFConfig?: (options: {
     mfConfig: moduleFederationPlugin.ModuleFederationPluginOptions;
     baseName: string;
-    pkgName: string;
+    metaName: string;
     isServer: boolean;
     routesFilePath: string;
   }) => void;

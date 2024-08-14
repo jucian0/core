@@ -1,27 +1,18 @@
 import type { ServerPlugin } from '@modern-js/server-core';
 import { getInstance, init } from '@module-federation/enhanced/runtime';
-import { InternalModernPluginOptions } from '../../types';
 import { MF_SLIM_ROUTES } from '../../runtime/constant';
 
-export default (options: InternalModernPluginOptions): ServerPlugin => ({
+type MFRuntimeOptions = Parameters<typeof init>[0];
+
+export default (mfRuntimeOptions: MFRuntimeOptions): ServerPlugin => ({
   name: 'MFDataLoaderServerPlugin',
   pre: ['@modern-js/plugin-inject-resource'],
   setup(api) {
-    const mfConfig = options.csrConfig!;
-    const remotes = mfConfig.remotes;
-    if (!remotes || !Object.keys(remotes).length) {
+    const { remotes, name } = mfRuntimeOptions;
+    if (!remotes.length) {
       return {};
     }
-    const runtimeRemotes = Object.entries(remotes).map((item) => {
-      const [_alias, nameAndEntry] = item;
-      const [name, entry] = (nameAndEntry as string).split('@');
-      return {
-        name,
-        entry,
-      };
-    });
     let isHandled = false;
-
     return {
       prepare() {
         const { middlewares } = api.useAppContext();
@@ -41,11 +32,11 @@ export default (options: InternalModernPluginOptions): ServerPlugin => ({
               const instance =
                 getInstance() ||
                 init({
-                  name: mfConfig.name!,
-                  remotes: runtimeRemotes,
+                  name: name,
+                  remotes,
                 });
               const slimRoutes = await Promise.all(
-                runtimeRemotes.map(async (remote) => {
+                remotes.map(async (remote) => {
                   const { routes, baseName } = (await instance.loadRemote(
                     `${remote.name}/${MF_SLIM_ROUTES}`,
                   )) as { baseName: string; routes: any };
