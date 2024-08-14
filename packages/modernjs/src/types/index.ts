@@ -28,13 +28,16 @@ export type DataLoaderOptions = {
   baseName: string;
   partialSSRRemotes?: string[];
   pkgName?: string;
+  serverPlugin?: string;
   fetchSSRByRouteIds?: (
     partialSSRRemotes: string[],
     mfConfig: moduleFederationPlugin.ModuleFederationPluginOptions,
   ) => Promise<string[] | undefined>;
-  patchMFConfig?: (
-    mfConfig: moduleFederationPlugin.ModuleFederationPluginOptions,
-    baseName: string,
-    pkgName: string,
-  ) => void;
+  patchMFConfig?: (options: {
+    mfConfig: moduleFederationPlugin.ModuleFederationPluginOptions;
+    baseName: string;
+    pkgName: string;
+    isServer: boolean;
+    routesFilePath: string;
+  }) => void;
 };

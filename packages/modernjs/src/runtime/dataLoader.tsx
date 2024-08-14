@@ -1,7 +1,7 @@
 import type { Plugin } from '@modern-js/runtime';
 import { type RouteObject } from '@modern-js/runtime/router';
 import { getInstance, loadRemote } from '@module-federation/enhanced/runtime';
-import { MF_ROUTES_KEY, MF_ROUTE_META_KEY } from './constant';
+import { MF_FULL_ROUTES } from './constant';
 
 declare global {
   var mfRemoteRoutes: RouteObject[];
@@ -21,7 +21,7 @@ async function loadRoutes() {
     return;
   }
   const remoteModuleIds = remotes.map((remote) => {
-    return `${remote.name}/${MF_ROUTES_KEY}`;
+    return `${remote.name}/${MF_FULL_ROUTES}`;
   });
 
   const traverse = (cRoutes: RouteObject[], prefix: string) => {
@@ -38,17 +38,12 @@ async function loadRoutes() {
 
   await Promise.all(
     remoteModuleIds.map(async (remoteModuleId) => {
-      const remoteName = remoteModuleId.split(`/${MF_ROUTES_KEY}`)[0];
-      const remoteMetaKey = `${remoteName}/${MF_ROUTE_META_KEY}`;
-      const remoteRouteMeta = (await loadRemote(remoteMetaKey)) as {
-        baseName: string;
-        prefix: string;
-      };
-      const { routes } = (await loadRemote(remoteModuleId)) as {
+      const remoteName = remoteModuleId.split(`/${MF_FULL_ROUTES}`)[0];
+      const { routes, baseName } = (await loadRemote(remoteModuleId)) as {
         routes: RouteObject[];
+        baseName: string;
       };
-      traverse(routes, remoteRouteMeta.prefix);
-      routes[0].path = `/${remoteRouteMeta.baseName}`;
+      routes[0].path = `/${baseName}`;
       // @ts-ignore
       routes[0].isRoot = false;
       globalThis.mfRemoteRoutes.push(...routes);
@@ -67,17 +62,17 @@ export const ssrDataLoaderPlugin = (): Plugin => {
         async beforeRender({ context }) {
           console.log('init');
 
-          if (typeof window === 'undefined') {
-            console.log(context.ssrContext?.request.pathname);
-          } else {
-            console.log(location.pathname);
-          }
+          // if (typeof window === 'undefined') {
+          //   console.log(context.ssrContext?.request.pathname);
+          // } else {
+          //   console.log(location.pathname);
+          // }
           await loadRoutes();
         },
         modifyRoutes: (routes: RouteObject[]) => {
           console.log('modifyRoutes');
           routes.push(...globalThis.mfRemoteRoutes);
-          console.log(routes);
+          console.log('routes: ', routes);
           return routes;
         },
       };

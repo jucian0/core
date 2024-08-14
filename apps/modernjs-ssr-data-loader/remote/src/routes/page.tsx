@@ -1,8 +1,8 @@
-import Image from '../components/Image';
 import './index.css';
-import { useRouteLoaderData } from '@modern-js/runtime/router';
-import type { ProfileData } from './page.data';
+import { useRouteLoaderData, Link } from '@modern-js/runtime/router';
 import { withMFRouteId } from '@modern-js/runtime/mf';
+import Image from '../components/Image';
+import type { ProfileData } from './page.data';
 
 const Index = (): JSX.Element => {
   const data = (useRouteLoaderData(withMFRouteId('page')) as ProfileData) || {
@@ -10,6 +10,7 @@ const Index = (): JSX.Element => {
   };
   return (
     <div className="container-box">
+      <Link to={'a'}> jump a</Link>
       provider {data.message}
       <Image />
     </div>
