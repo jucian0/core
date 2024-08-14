@@ -30,7 +30,9 @@ export type DataLoaderOptions = {
   partialSSRRemotes?: string[];
   metaName?: string;
   serverPlugin?: string;
-  runtimeOptions?: Parameters<typeof init>[0];
+  transformRuntimeOptions?: (
+    mfConfig: moduleFederationPlugin.ModuleFederationPluginOptions,
+  ) => Parameters<typeof init>[0];
   fetchSSRByRouteIds?: (
     partialSSRRemotes: string[],
     mfConfig: moduleFederationPlugin.ModuleFederationPluginOptions,

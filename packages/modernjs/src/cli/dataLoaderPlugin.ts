@@ -172,7 +172,7 @@ function _pathMfConfig(
 //   return [...remoteProviderRouteIds];
 // }
 
-function transformRuntimeOptions(
+function _transformRuntimeOptions(
   buildOptions: moduleFederationPlugin.ModuleFederationPluginOptions,
 ): Parameters<typeof init>[0] {
   const remotes = buildOptions.remotes || {};
@@ -207,7 +207,7 @@ export const moduleFederationDataLoaderPlugin = (
       patchMFConfig,
       metaName = META_NAME,
       serverPlugin = '@module-federation/modern-js/data-loader-server',
-      runtimeOptions,
+      transformRuntimeOptions,
     } = userConfig;
 
     if (!baseName) {
@@ -226,6 +226,8 @@ export const moduleFederationDataLoaderPlugin = (
       `./main/${MODERN_JS_FILE_SYSTEM_ROUTES_FILE_NAME}`,
     );
 
+    const transformRuntimeFn =
+      transformRuntimeOptions || _transformRuntimeOptions;
     return {
       _internalRuntimePlugins: ({ entrypoint, plugins }) => {
         plugins.push({
@@ -238,9 +240,7 @@ export const moduleFederationDataLoaderPlugin = (
       _internalServerPlugins({ plugins }) {
         plugins.push({
           name: serverPlugin,
-          options:
-            runtimeOptions ||
-            transformRuntimeOptions(internalOptions.csrConfig!),
+          options: transformRuntimeFn(internalOptions.csrConfig!),
         });
 
         return { plugins };
